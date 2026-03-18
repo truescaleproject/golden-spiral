@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Golden Ratio Spiral Overlay</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  header {
+    padding: 12px 20px;
+    background: #16213e;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid #0f3460;
+  }
+  header h1 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #e0a526;
+    margin-right: auto;
+  }
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .control-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  label {
+    font-size: 13px;
+    color: #a0a0b8;
+  }
+  input[type="range"] {
+    width: 110px;
+    accent-color: #e0a526;
+  }
+  input[type="color"] {
+    width: 32px;
+    height: 26px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    cursor: pointer;
+    background: none;
+  }
+  input[type="number"] {
+    width: 54px;
+    background: #0f3460;
+    border: 1px solid #1a4a8a;
+    color: #e0e0e0;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  select {
+    background: #0f3460;
+    border: 1px solid #1a4a8a;
+    color: #e0e0e0;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  button {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .btn-primary {
+    background: #e0a526;
+    color: #1a1a2e;
+  }
+  .btn-primary:hover { background: #f0b536; }
+  .btn-secondary {
+    background: #0f3460;
+    color: #e0e0e0;
+    border: 1px solid #1a4a8a;
+  }
+  .btn-secondary:hover { background: #1a4a8a; }
+  .btn-active {
+    background: #e0a526 !important;
+    color: #1a1a2e !important;
+    border-color: #e0a526 !important;
+  }
+  .canvas-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  canvas {
+    cursor: grab;
+    max-width: 100%;
+    max-height: 100%;
+  }
+  canvas:active { cursor: grabbing; }
+  .drop-zone {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    color: #a0a0b8;
+    font-size: 18px;
+    pointer-events: none;
+  }
+  .drop-zone.has-image { display: none; }
+  .drop-zone svg {
+    width: 64px;
+    height: 64px;
+    stroke: #e0a526;
+    fill: none;
+    stroke-width: 1.5;
+  }
+  .drop-zone .sub { font-size: 14px; color: #666; }
+  input[type="file"] { display: none; }
+  footer {
+    padding: 6px 20px;
+    background: #16213e;
+    font-size: 12px;
+    color: #666;
+    border-top: 1px solid #0f3460;
+    display: flex;
+    justify-content: space-between;
+  }
+  .kbd {
+    background: #0f3460;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 11px;
+  }
+  .color-swatch {
+    width: 26px;
+    height: 26px;
+    border-radius: 4px;
+    border: 2px solid #444;
+    cursor: pointer;
+    display: inline-block;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Golden Ratio Spiral</h1>
+  <div class="controls">
+    <button class="btn-primary" id="uploadBtn">Upload Image</button>
+    <input type="file" id="fileInput" accept="image/*">
+
+    <div class="control-group">
+      <label>Scale</label>
+      <input type="range" id="scaleSlider" min="5" max="500" value="100">
+      <span id="scaleValue" style="font-size:13px;width:40px">100%</span>
+    </div>
+
+    <div class="control-group">
+      <label>Rotate</label>
+      <input type="range" id="rotateSlider" min="0" max="360" value="0">
+      <span id="rotateValue" style="font-size:13px;width:35px">0&deg;</span>
+    </div>
+
+    <div class="control-group">
+      <label>Stroke</label>
+      <input type="number" id="lineWidth" value="2" min="1" max="20">
+    </div>
+
+    <div class="control-group">
+      <label>Color</label>
+      <input type="color" id="spiralColor" value="#e0a526">
+      <button class="btn-secondary" id="autoColorBtn" title="Auto-contrast: picks color based on image beneath spiral">Auto</button>
+    </div>
+
+    <div class="control-group">
+      <label>Opacity</label>
+      <input type="range" id="opacitySlider" min="5" max="100" value="85">
+      <span id="opacityValue" style="font-size:13px;width:35px">85%</span>
+    </div>
+
+    <div class="control-group">
+      <label>Flip</label>
+      <select id="flipSelect">
+        <option value="none">None</option>
+        <option value="h">Horizontal</option>
+        <option value="v">Vertical</option>
+        <option value="hv">Both</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label>Boxes</label>
+      <input type="checkbox" id="showBoxes">
+    </div>
+
+    <button class="btn-secondary" id="resetBtn">Reset</button>
+    <button class="btn-secondary" id="exportBtn">Export</button>
+  </div>
+</header>
+
+<div class="canvas-area" id="canvasArea">
+  <canvas id="canvas"></canvas>
+  <div class="drop-zone" id="dropZone">
+    <svg viewBox="0 0 64 64">
+      <rect x="8" y="8" width="48" height="48" rx="4"/>
+      <circle cx="24" cy="24" r="6"/>
+      <polyline points="8,44 24,32 36,40 48,28 56,36"/>
+    </svg>
+    <div>Drop an image here or click Upload</div>
+    <div class="sub">The golden ratio spiral will be overlaid on your image</div>
+  </div>
+</div>
+
+<footer>
+  <span>Drag to reposition &middot; Scroll to scale &middot; <span class="kbd">Shift</span>+Scroll to rotate &middot; Auto adjusts color for contrast</span>
+  <span id="posInfo"></span>
+</footer>
+
+<script>
+const PHI = (1 + Math.sqrt(5)) / 2;
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
+const canvasArea = document.getElementById('canvasArea');
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const uploadBtn = document.getElementById('uploadBtn');
+const scaleSlider = document.getElementById('scaleSlider');
+const scaleValue = document.getElementById('scaleValue');
+const rotateSlider = document.getElementById('rotateSlider');
+const rotateValue = document.getElementById('rotateValue');
+const lineWidthInput = document.getElementById('lineWidth');
+const spiralColorInput = document.getElementById('spiralColor');
+const autoColorBtn = document.getElementById('autoColorBtn');
+const opacitySlider = document.getElementById('opacitySlider');
+const opacityValue = document.getElementById('opacityValue');
+const flipSelect = document.getElementById('flipSelect');
+const showBoxesInput = document.getElementById('showBoxes');
+const resetBtn = document.getElementById('resetBtn');
+const exportBtn = document.getElementById('exportBtn');
+const posInfo = document.getElementById('posInfo');
+
+let userImg = null;
+
+let state = {
+  x: 0, y: 0,
+  scale: 1,
+  rotation: 0,
+  lineWidth: 2,
+  color: '#e0a526',
+  autoColor: true,
+  opacity: 0.85,
+  flipH: false,
+  flipV: false,
+  showBoxes: false
+};
+
+let dragging = false;
+let dragStart = { x: 0, y: 0 };
+
+// Start with auto-color on
+autoColorBtn.classList.add('btn-active');
+
+// ── Fibonacci tiling data ──
+const NUM_SQUARES = 14;
+
+function buildFibSquares(baseSize) {
+  const fib = [1, 1];
+  for (let i = 2; i < NUM_SQUARES; i++) fib.push(fib[i - 1] + fib[i - 2]);
+  const sf = baseSize / fib[NUM_SQUARES - 1];
+
+  const squares = [];
+  for (let i = 0; i < NUM_SQUARES; i++) {
+    const size = fib[i] * sf;
+    if (i === 0) {
+      squares.push({ x: 0, y: 0, size });
+    } else {
+      const p = squares[i - 1];
+      const dir = i % 4;
+      let nx, ny;
+      if (dir === 0)      { nx = p.x + p.size;          ny = p.y + p.size - size; }
+      else if (dir === 1) { nx = p.x + p.size - size;   ny = p.y - size; }
+      else if (dir === 2) { nx = p.x - size;            ny = p.y; }
+      else                { nx = p.x;                   ny = p.y + p.size; }
+      squares.push({ x: nx, y: ny, size });
+    }
+  }
+  return squares;
+}
+
+function getConvergenceCenter(squares) {
+  const sq = squares[Math.max(0, squares.length - 4)];
+  return { x: sq.x + sq.size / 2, y: sq.y + sq.size / 2 };
+}
+
+// ── Auto-contrast color ──
+function sampleImageUnderSpiral() {
+  if (!userImg) return null;
+  // Sample a grid of pixels in the spiral's bounding area
+  const baseSize = 100 * state.scale;
+  const squares = buildFibSquares(baseSize);
+  const center = getConvergenceCenter(squares);
+
+  // Get bounding box of all squares
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const sq of squares) {
+    minX = Math.min(minX, sq.x);
+    minY = Math.min(minY, sq.y);
+    maxX = Math.max(maxX, sq.x + sq.size);
+    maxY = Math.max(maxY, sq.y + sq.size);
+  }
+
+  // Transform to canvas coords
+  const rad = state.rotation * Math.PI / 180;
+  const cos = Math.cos(rad), sin = Math.sin(rad);
+  const sx = state.flipH ? -1 : 1;
+  const sy = state.flipV ? -1 : 1;
+
+  const samplePoints = [];
+  const steps = 6;
+  for (let i = 0; i <= steps; i++) {
+    for (let j = 0; j <= steps; j++) {
+      let lx = minX + (maxX - minX) * i / steps - center.x;
+      let ly = minY + (maxY - minY) * j / steps - center.y;
+      lx *= sx; ly *= sy;
+      const cx = state.x + lx * cos - ly * sin;
+      const cy = state.y + lx * sin + ly * cos;
+      samplePoints.push([Math.round(cx), Math.round(cy)]);
+    }
+  }
+
+  // Read pixels from the canvas (which has the image drawn)
+  let totalR = 0, totalG = 0, totalB = 0, count = 0;
+  for (const [px, py] of samplePoints) {
+    if (px < 0 || py < 0 || px >= canvas.width || py >= canvas.height) continue;
+    const pixel = ctx.getImageData(px, py, 1, 1).data;
+    totalR += pixel[0];
+    totalG += pixel[1];
+    totalB += pixel[2];
+    count++;
+  }
+
+  if (count === 0) return '#e0a526';
+
+  const avgR = totalR / count;
+  const avgG = totalG / count;
+  const avgB = totalB / count;
+
+  // Calculate perceived luminance
+  const luminance = (0.299 * avgR + 0.587 * avgG + 0.114 * avgB) / 255;
+
+  // Pick a high-contrast color
+  // For dark backgrounds: bright complementary color
+  // For light backgrounds: dark complementary color
+  // Use the complementary hue of the average color for extra visibility
+
+  // Convert average to HSL
+  const r = avgR / 255, g = avgG / 255, b = avgB / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h, s, l = (max + min) / 2;
+
+  if (max === min) {
+    h = 0; s = 0;
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+    else if (max === g) h = ((b - r) / d + 2) / 6;
+    else h = ((r - g) / d + 4) / 6;
+  }
+
+  // Shift hue by 180° for complement, and set high saturation + contrast lightness
+  const newH = (h + 0.5) % 1;
+  const newS = Math.max(s, 0.7);
+  const newL = luminance > 0.5 ? 0.15 : 0.9;
+
+  // HSL to hex
+  function hslToHex(h, s, l) {
+    let r, g, b;
+    if (s === 0) {
+      r = g = b = l;
+    } else {
+      const hue2rgb = (p, q, t) => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1/6) return p + (q - p) * 6 * t;
+        if (t < 1/2) return q;
+        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+        return p;
+      };
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      r = hue2rgb(p, q, h + 1/3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1/3);
+    }
+    const toHex = x => Math.round(x * 255).toString(16).padStart(2, '0');
+    return '#' + toHex(r) + toHex(g) + toHex(b);
+  }
+
+  return hslToHex(newH, newS, newL);
+}
+
+// ── Drawing ──
+function resizeCanvas() {
+  const rect = canvasArea.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+  draw();
+}
+
+function loadImage(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const image = new Image();
+    image.onload = () => {
+      userImg = image;
+      dropZone.classList.add('has-image');
+      state.x = canvas.width / 2;
+      state.y = canvas.height / 2;
+      const displayScale = Math.min(canvas.width / userImg.width, canvas.height / userImg.height);
+      const displayH = userImg.height * displayScale;
+      state.scale = displayH / 100;
+      scaleSlider.value = 100;
+      scaleValue.textContent = '100%';
+      state.rotation = 0;
+      rotateSlider.value = 0;
+      rotateValue.textContent = '0\u00B0';
+      draw();
+    };
+    image.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function drawImageFit() {
+  if (!userImg) return;
+  const cw = canvas.width, ch = canvas.height;
+  const scale = Math.min(cw / userImg.width, ch / userImg.height);
+  const w = userImg.width * scale;
+  const h = userImg.height * scale;
+  const x = (cw - w) / 2;
+  const y = (ch - h) / 2;
+  ctx.drawImage(userImg, x, y, w, h);
+}
+
+function drawSpiralVector(targetCtx, x, y, scale, rotation, flipH, flipV, opacity, color, lineWidth, showBoxes) {
+  targetCtx.save();
+  targetCtx.globalAlpha = opacity;
+  targetCtx.translate(x, y);
+  targetCtx.rotate(rotation * Math.PI / 180);
+  targetCtx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+
+  const baseSize = 100 * scale;
+  const squares = buildFibSquares(baseSize);
+  const center = getConvergenceCenter(squares);
+  targetCtx.translate(-center.x, -center.y);
+
+  targetCtx.strokeStyle = color;
+  targetCtx.lineWidth = lineWidth;
+  targetCtx.lineCap = 'round';
+  targetCtx.lineJoin = 'round';
+
+  // Draw Fibonacci rectangles
+  if (showBoxes) {
+    targetCtx.globalAlpha = opacity * 0.35;
+    for (const sq of squares) {
+      targetCtx.strokeRect(sq.x, sq.y, sq.size, sq.size);
+    }
+    // Outer bounding rectangle
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const sq of squares) {
+      minX = Math.min(minX, sq.x);
+      minY = Math.min(minY, sq.y);
+      maxX = Math.max(maxX, sq.x + sq.size);
+      maxY = Math.max(maxY, sq.y + sq.size);
+    }
+    targetCtx.globalAlpha = opacity * 0.5;
+    targetCtx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+    targetCtx.globalAlpha = opacity;
+  }
+
+  // Draw the spiral as connected quarter-circle arcs
+  targetCtx.beginPath();
+  for (let i = 0; i < NUM_SQUARES; i++) {
+    const sq = squares[i];
+    const dir = i % 4;
+    let arcX, arcY, startAngle, endAngle;
+
+    if (dir === 0) {
+      arcX = sq.x + sq.size; arcY = sq.y + sq.size;
+      startAngle = Math.PI; endAngle = 1.5 * Math.PI;
+    } else if (dir === 1) {
+      arcX = sq.x + sq.size; arcY = sq.y;
+      startAngle = 0.5 * Math.PI; endAngle = Math.PI;
+    } else if (dir === 2) {
+      arcX = sq.x; arcY = sq.y;
+      startAngle = 0; endAngle = 0.5 * Math.PI;
+    } else {
+      arcX = sq.x; arcY = sq.y + sq.size;
+      startAngle = 1.5 * Math.PI; endAngle = 2 * Math.PI;
+    }
+
+    if (i === 0) {
+      // Move to arc start
+      targetCtx.moveTo(
+        arcX + sq.size * Math.cos(startAngle),
+        arcY + sq.size * Math.sin(startAngle)
+      );
+    }
+    targetCtx.arc(arcX, arcY, sq.size, startAngle, endAngle);
+  }
+  targetCtx.stroke();
+
+  targetCtx.restore();
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (userImg) {
+    drawImageFit();
+  } else {
+    ctx.strokeStyle = '#ffffff08';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < canvas.width; x += 40) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+    }
+    for (let y = 0; y < canvas.height; y += 40) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+    }
+  }
+
+  // Determine color
+  let color = state.color;
+  if (state.autoColor && userImg) {
+    color = sampleImageUnderSpiral();
+    // Update the color picker to show the auto-selected color
+    spiralColorInput.value = color;
+  }
+
+  drawSpiralVector(ctx, state.x, state.y, state.scale, state.rotation,
+    state.flipH, state.flipV, state.opacity, color, state.lineWidth, state.showBoxes);
+
+  posInfo.textContent = `X: ${Math.round(state.x)}  Y: ${Math.round(state.y)}  Scale: ${Math.round(state.scale * 100)}%  Rot: ${Math.round(state.rotation)}\u00B0`;
+}
+
+// ── Event handlers ──
+uploadBtn.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files[0]) loadImage(e.target.files[0]);
+});
+
+canvasArea.addEventListener('dragover', (e) => { e.preventDefault(); });
+canvasArea.addEventListener('drop', (e) => {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) loadImage(file);
+});
+
+canvas.addEventListener('mousedown', (e) => {
+  dragging = true;
+  dragStart.x = e.clientX - state.x;
+  dragStart.y = e.clientY - state.y;
+  canvas.style.cursor = 'grabbing';
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (!dragging) return;
+  state.x = e.clientX - dragStart.x;
+  state.y = e.clientY - dragStart.y;
+  draw();
+});
+
+window.addEventListener('mouseup', () => {
+  dragging = false;
+  canvas.style.cursor = 'grab';
+});
+
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  if (e.shiftKey) {
+    state.rotation += e.deltaY > 0 ? 2 : -2;
+    state.rotation = ((state.rotation % 360) + 360) % 360;
+    rotateSlider.value = state.rotation;
+    rotateValue.textContent = Math.round(state.rotation) + '\u00B0';
+  } else {
+    const factor = e.deltaY > 0 ? 0.95 : 1.05;
+    state.scale *= factor;
+    state.scale = Math.max(0.05, Math.min(20, state.scale));
+    const pct = Math.round(state.scale * 100);
+    scaleSlider.value = Math.min(500, pct);
+    scaleValue.textContent = pct + '%';
+  }
+  draw();
+}, { passive: false });
+
+// Touch support
+let lastTouchDist = 0;
+let lastTouchAngle = 0;
+
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  if (e.touches.length === 1) {
+    dragging = true;
+    dragStart.x = e.touches[0].clientX - state.x;
+    dragStart.y = e.touches[0].clientY - state.y;
+  } else if (e.touches.length === 2) {
+    dragging = false;
+    const dx = e.touches[1].clientX - e.touches[0].clientX;
+    const dy = e.touches[1].clientY - e.touches[0].clientY;
+    lastTouchDist = Math.hypot(dx, dy);
+    lastTouchAngle = Math.atan2(dy, dx) * 180 / Math.PI;
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  if (e.touches.length === 1 && dragging) {
+    state.x = e.touches[0].clientX - dragStart.x;
+    state.y = e.touches[0].clientY - dragStart.y;
+    draw();
+  } else if (e.touches.length === 2) {
+    const dx = e.touches[1].clientX - e.touches[0].clientX;
+    const dy = e.touches[1].clientY - e.touches[0].clientY;
+    const dist = Math.hypot(dx, dy);
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    if (lastTouchDist > 0) {
+      state.scale *= dist / lastTouchDist;
+      state.scale = Math.max(0.05, Math.min(20, state.scale));
+      const pct = Math.round(state.scale * 100);
+      scaleSlider.value = Math.min(500, pct);
+      scaleValue.textContent = pct + '%';
+    }
+    state.rotation += angle - lastTouchAngle;
+    state.rotation = ((state.rotation % 360) + 360) % 360;
+    rotateSlider.value = Math.round(state.rotation);
+    rotateValue.textContent = Math.round(state.rotation) + '\u00B0';
+    lastTouchDist = dist;
+    lastTouchAngle = angle;
+    draw();
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchend', () => { dragging = false; lastTouchDist = 0; });
+
+// Controls
+scaleSlider.addEventListener('input', () => {
+  state.scale = scaleSlider.value / 100;
+  scaleValue.textContent = scaleSlider.value + '%';
+  draw();
+});
+
+rotateSlider.addEventListener('input', () => {
+  state.rotation = parseFloat(rotateSlider.value);
+  rotateValue.textContent = Math.round(state.rotation) + '\u00B0';
+  draw();
+});
+
+lineWidthInput.addEventListener('input', () => {
+  state.lineWidth = parseFloat(lineWidthInput.value) || 2;
+  draw();
+});
+
+spiralColorInput.addEventListener('input', () => {
+  state.color = spiralColorInput.value;
+  state.autoColor = false;
+  autoColorBtn.classList.remove('btn-active');
+  draw();
+});
+
+autoColorBtn.addEventListener('click', () => {
+  state.autoColor = !state.autoColor;
+  autoColorBtn.classList.toggle('btn-active', state.autoColor);
+  draw();
+});
+
+opacitySlider.addEventListener('input', () => {
+  state.opacity = opacitySlider.value / 100;
+  opacityValue.textContent = opacitySlider.value + '%';
+  draw();
+});
+
+flipSelect.addEventListener('change', () => {
+  const v = flipSelect.value;
+  state.flipH = v === 'h' || v === 'hv';
+  state.flipV = v === 'v' || v === 'hv';
+  draw();
+});
+
+showBoxesInput.addEventListener('change', () => {
+  state.showBoxes = showBoxesInput.checked;
+  draw();
+});
+
+resetBtn.addEventListener('click', () => {
+  state.x = canvas.width / 2;
+  state.y = canvas.height / 2;
+  if (userImg) {
+    const displayScale = Math.min(canvas.width / userImg.width, canvas.height / userImg.height);
+    state.scale = (userImg.height * displayScale) / 100;
+  } else {
+    state.scale = 1;
+  }
+  state.rotation = 0;
+  state.lineWidth = 2;
+  state.color = '#e0a526';
+  state.autoColor = true;
+  state.opacity = 0.85;
+  state.flipH = false;
+  state.flipV = false;
+  state.showBoxes = false;
+  scaleSlider.value = 100;
+  scaleValue.textContent = '100%';
+  rotateSlider.value = 0;
+  rotateValue.textContent = '0\u00B0';
+  lineWidthInput.value = 2;
+  spiralColorInput.value = '#e0a526';
+  autoColorBtn.classList.add('btn-active');
+  opacitySlider.value = 85;
+  opacityValue.textContent = '85%';
+  flipSelect.value = 'none';
+  showBoxesInput.checked = false;
+  draw();
+});
+
+exportBtn.addEventListener('click', () => {
+  if (!userImg) return;
+  const expCanvas = document.createElement('canvas');
+  expCanvas.width = userImg.width;
+  expCanvas.height = userImg.height;
+  const expCtx = expCanvas.getContext('2d');
+
+  expCtx.drawImage(userImg, 0, 0);
+
+  const displayScale = Math.min(canvas.width / userImg.width, canvas.height / userImg.height);
+  const displayOffX = (canvas.width - userImg.width * displayScale) / 2;
+  const displayOffY = (canvas.height - userImg.height * displayScale) / 2;
+
+  const imgX = (state.x - displayOffX) / displayScale;
+  const imgY = (state.y - displayOffY) / displayScale;
+  const imgScale = state.scale / displayScale;
+
+  // Use current displayed color (auto or manual)
+  let color = state.color;
+  if (state.autoColor) {
+    color = sampleImageUnderSpiral() || state.color;
+  }
+
+  drawSpiralVector(expCtx, imgX, imgY, imgScale, state.rotation,
+    state.flipH, state.flipV, state.opacity, color,
+    state.lineWidth / displayScale, state.showBoxes);
+
+  const link = document.createElement('a');
+  link.download = 'golden-spiral-overlay.png';
+  link.href = expCanvas.toDataURL('image/png');
+  link.click();
+});
+
+// Initialize
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+state.x = canvas.width / 2;
+state.y = canvas.height / 2;
+draw();
+</script>
+</body>
+</html>
