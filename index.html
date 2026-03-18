@@ -168,8 +168,8 @@
 
     <div class="control-group">
       <label>Rotate</label>
-      <input type="range" id="rotateSlider" min="0" max="360" value="0">
-      <span id="rotateValue" style="font-size:13px;width:35px">0&deg;</span>
+      <input type="range" id="rotateSlider" min="-180" max="180" value="0">
+      <span id="rotateValue" style="font-size:13px;width:45px">0&deg;</span>
     </div>
 
     <div class="control-group">
@@ -409,6 +409,7 @@ function loadImage(file) {
       state.rotation = 0;
       rotateSlider.value = 0;
       rotateValue.textContent = '0\u00B0';
+  rotateSliderActive = false;
       draw();
     };
     image.src = e.target.result;
@@ -513,8 +514,7 @@ canvas.addEventListener('wheel', (e) => {
   e.preventDefault();
   if (e.shiftKey) {
     state.rotation += e.deltaY > 0 ? 2 : -2;
-    state.rotation = ((state.rotation % 360) + 360) % 360;
-    rotateSlider.value = state.rotation;
+    rotateSlider.value = ((state.rotation % 360) + 360) % 360 - 180;
     rotateValue.textContent = Math.round(state.rotation) + '\u00B0';
   } else {
     const factor = e.deltaY > 0 ? 0.95 : 1.05;
@@ -565,8 +565,7 @@ canvas.addEventListener('touchmove', (e) => {
       scaleValue.textContent = pct + '%';
     }
     state.rotation += angle - lastTouchAngle;
-    state.rotation = ((state.rotation % 360) + 360) % 360;
-    rotateSlider.value = Math.round(state.rotation);
+    rotateSlider.value = ((state.rotation % 360) + 360) % 360 - 180;
     rotateValue.textContent = Math.round(state.rotation) + '\u00B0';
     lastTouchDist = dist;
     lastTouchAngle = angle;
@@ -583,11 +582,36 @@ scaleSlider.addEventListener('input', () => {
   draw();
 });
 
+// Rotation slider works as a relative jog dial:
+// Dragging right = CW, left = CCW, accumulates endlessly.
+// On release it snaps back to center (0) ready for another drag.
+let rotateSliderActive = false;
+let rotateSliderBase = 0;
+rotateSlider.addEventListener('mousedown', () => {
+  rotateSliderActive = true;
+  rotateSliderBase = state.rotation;
+});
+rotateSlider.addEventListener('touchstart', () => {
+  rotateSliderActive = true;
+  rotateSliderBase = state.rotation;
+});
 rotateSlider.addEventListener('input', () => {
-  state.rotation = parseFloat(rotateSlider.value);
+  if (rotateSliderActive) {
+    state.rotation = rotateSliderBase + parseFloat(rotateSlider.value);
+  } else {
+    state.rotation = parseFloat(rotateSlider.value);
+  }
   rotateValue.textContent = Math.round(state.rotation) + '\u00B0';
   draw();
 });
+function rotateSliderRelease() {
+  if (rotateSliderActive) {
+    rotateSliderActive = false;
+    rotateSlider.value = 0;
+  }
+}
+rotateSlider.addEventListener('mouseup', rotateSliderRelease);
+rotateSlider.addEventListener('touchend', rotateSliderRelease);
 
 lineWidthInput.addEventListener('input', () => {
   state.lineWidth = parseFloat(lineWidthInput.value) || 3;
@@ -640,6 +664,7 @@ resetBtn.addEventListener('click', () => {
   scaleValue.textContent = '100%';
   rotateSlider.value = 0;
   rotateValue.textContent = '0\u00B0';
+  rotateSliderActive = false;
   lineWidthInput.value = 3;
   spiralColorInput.value = '#e0a526';
   autoColorBtn.classList.add('btn-active');
